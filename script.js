@@ -195,15 +195,16 @@ function getFormData(form) {
   };
 }
 
-function getLeadData() {
+function getLeadData(preferredChannel = "whatsapp") {
   const data = new FormData(leadForm);
   return {
     name: String(data.get("name") || "").trim(),
-    role: String(data.get("role") || "").trim(),
+    role: "",
     company: String(data.get("company") || "").trim(),
     email: String(data.get("email") || "").trim(),
     phone: String(data.get("phone") || "").trim(),
-    cnpj: String(data.get("cnpj") || "").trim(),
+    cnpj: "",
+    preferredChannel,
     consent: data.get("consent") === "on"
   };
 }
@@ -227,7 +228,8 @@ function getSubmissionData(lead) {
       timeStyle: "short"
     }),
     leadName: lead.name,
-    leadRole: lead.role
+    leadRole: lead.role,
+    preferredChannel: lead.preferredChannel
   };
 }
 
@@ -426,7 +428,7 @@ function showSimulation(simulation) {
     resultStatus.textContent = "Fora do perfil para aplicação direta";
     resultTitle.textContent = "Prévia calculada";
     resultDescription.textContent =
-      "Para entender o cenário e próximos passos, libere o diagnóstico completo por e-mail.";
+      "Para entender o cenário e os próximos passos, receba sua análise pelo WhatsApp.";
   } else if (isAttention) {
     resultStatus.classList.add("is-warning");
     resultStatus.textContent = "Potencial com pontos de atenção";
@@ -437,7 +439,7 @@ function showSimulation(simulation) {
     resultStatus.textContent = "Potencial identificado";
     resultTitle.textContent = "Prévia calculada";
     resultDescription.textContent =
-      "Para receber a leitura completa da simulação, preencha os dados abaixo.";
+      "Para receber a leitura da simulação, preencha os dados abaixo e siga para o WhatsApp.";
   }
 
   savingRange.textContent = savings.high > 0
@@ -494,7 +496,7 @@ function getCrmFields(input, lead, eligibility, savings, submission) {
     "FBCLID": getUtmParams().fbclid || "",
     "Consentimento LGPD": lead.consent ? "Sim" : "Não",
     "URL da página": window.location.href,
-    "Observações comerciais": "",
+    "Observações comerciais": `Canal preferido: ${lead.preferredChannel === "whatsapp" ? "WhatsApp" : "E-mail"}`,
     "Status do atendimento": "Novo",
     "Responsável comercial": "",
     "Data do primeiro contato": "",
@@ -604,7 +606,7 @@ function buildReport(simulation, lead) {
     },
     {
       title: "Próxima etapa recomendada",
-      text: "Agende uma conversa rápida pelo WhatsApp para entendermos o cenário da empresa e indicar os próximos passos da análise."
+      text: "Abra a conversa no WhatsApp para agilizar a validação dos dados e os próximos passos da análise."
     }
   ];
 
@@ -619,6 +621,22 @@ function buildReport(simulation, lead) {
   });
 
   fullReport.classList.remove("is-hidden");
+  leadForm.classList.add("is-hidden");
+}
+
+function buildWhatsAppAnalysisUrl(lead, simulation) {
+  const savings = simulation?.savings;
+  const range = savings?.high > 0
+    ? `${formatCurrency(savings.low)} a ${formatCurrency(savings.high)}`
+    : "a confirmar após validação";
+  const message = [
+    "Olá! Fiz a simulação da Lei do Bem na landing page.",
+    `Nome: ${lead.name}`,
+    `Empresa: ${lead.company}`,
+    `Faixa preliminar indicada: ${range}`,
+    "Quero receber minha análise e entender os próximos passos."
+  ].join("\n");
+  return `https://wa.me/5511912078985?text=${encodeURIComponent(message)}`;
 }
 
 prevButton.addEventListener("click", () => {
@@ -666,11 +684,19 @@ leadForm.addEventListener("submit", async (event) => {
   if (!latestSimulation) return;
   if (!leadForm.reportValidity()) return;
 
-  const lead = getLeadData();
+  const preferredChannel = "whatsapp";
+  const lead = getLeadData(preferredChannel);
   const payload = getPayload(latestSimulation, lead);
-  const submitButton = leadForm.querySelector("button[type='submit']");
-  submitButton.disabled = true;
+  const whatsappUrl = buildWhatsAppAnalysisUrl(lead, latestSimulation);
+  const submitButtons = Array.from(leadForm.querySelectorAll("button[type='submit']"));
+  submitButtons.forEach((button) => {
+    button.disabled = true;
+  });
   leadMessage.textContent = "Enviando dados da simulação...";
+
+  if (whatsappUrl) {
+    window.open(whatsappUrl, "_blank", "noopener");
+  }
 
   try {
     const sendResult = await sendPayload(payload);
@@ -680,7 +706,8 @@ leadForm.addEventListener("submit", async (event) => {
       eligibility_score: payload.eligibilityScore.score,
       estimated_savings_low: payload.estimatedSavingsRange.low,
       estimated_savings_high: payload.estimatedSavingsRange.high,
-      tax_regime: payload.taxProfile.taxRegime
+      tax_regime: payload.taxProfile.taxRegime,
+      preferred_channel: preferredChannel
     });
     leadMessage.textContent = sendResult.mode === "simulation"
       ? "Solicitação recebida. O envio automático fica ativo quando o webhook for configurado."
@@ -699,7 +726,9 @@ leadForm.addEventListener("submit", async (event) => {
       message: `Falha no webhook: ${error.message}`
     });
   } finally {
-    submitButton.disabled = false;
+    submitButtons.forEach((button) => {
+      button.disabled = false;
+    });
   }
 });
 
@@ -709,16 +738,10 @@ calculator.querySelectorAll("input[inputmode='decimal'], input[inputmode='numeri
 });
 
 const phoneField = leadForm.querySelector("input[name='phone']");
-const cnpjField = leadForm.querySelector("input[name='cnpj']");
 
 if (phoneField) {
   phoneField.addEventListener("input", () => formatPhoneInput(phoneField));
   phoneField.addEventListener("blur", () => formatPhoneInput(phoneField));
-}
-
-if (cnpjField) {
-  cnpjField.addEventListener("input", () => formatCnpjInput(cnpjField));
-  cnpjField.addEventListener("blur", () => formatCnpjInput(cnpjField));
 }
 
 openCalculatorButtons.forEach((button) => {

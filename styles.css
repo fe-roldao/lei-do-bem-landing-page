@@ -72,6 +72,18 @@ select {
   top: 16px;
 }
 
+.visually-hidden {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
 .container {
   width: min(var(--max), calc(100% - 40px));
   margin: 0 auto;
@@ -209,9 +221,15 @@ select {
 
 h1,
 h2,
-h3,
+h3 {
+  overflow-wrap: normal;
+  word-break: normal;
+  hyphens: none;
+}
+
 p {
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
+  word-break: normal;
 }
 
 h1 {
@@ -699,7 +717,18 @@ select:focus {
 
 .lead-form .button {
   width: 100%;
+}
+
+.lead-submit-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
   margin-top: 16px;
+}
+
+.lead-submit-grid .button {
+  margin: 0;
+  white-space: normal;
 }
 
 .lead-message {
@@ -1200,6 +1229,8 @@ button.nav-cta {
   font-size: clamp(3.2rem, 7.6vw, 7rem);
   line-height: 0.95;
   max-width: 980px;
+  overflow-wrap: normal;
+  word-break: normal;
 }
 
 .ad-hero h1 span {
@@ -1238,17 +1269,20 @@ button.nav-cta {
   grid-template-columns: minmax(0, 0.95fr) minmax(320px, 0.75fr);
   gap: clamp(22px, 5vw, 58px);
   align-items: center;
+  min-width: 0;
 }
 
 .case-panel {
   display: grid;
   gap: 18px;
+  min-width: 0;
 }
 
 .case-panel h2,
 .authority-grid h2,
 .final-cta h2 {
   font-size: clamp(2rem, 4.7vw, 4rem);
+  text-wrap: balance;
 }
 
 .case-panel p,
@@ -1258,6 +1292,34 @@ button.nav-cta {
   color: var(--muted);
   font-size: 1.04rem;
   font-weight: 650;
+}
+
+.authority-points {
+  display: grid;
+  gap: 10px;
+  margin: 22px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.authority-points li {
+  position: relative;
+  padding-left: 22px;
+  color: var(--paper);
+  font-size: 0.94rem;
+  font-weight: 750;
+}
+
+.authority-points li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.58em;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 0 4px rgba(116, 234, 112, 0.1);
 }
 
 .case-note,
@@ -1278,7 +1340,18 @@ button.nav-cta {
 }
 
 .compact-video {
+  width: 100%;
+  min-width: 0;
   min-height: 310px;
+  overflow: hidden;
+}
+
+.compact-video .instagram-media,
+.compact-video .instagram-media-rendered,
+.compact-video iframe {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
 }
 
 .quick-criteria {
@@ -1299,6 +1372,18 @@ button.nav-cta {
 
 .compact-faq {
   padding: clamp(48px, 6vw, 76px) 0;
+}
+
+.compact-faq .faq-list {
+  width: min(900px, 100%);
+  margin: 0 auto;
+}
+
+.faq-links a {
+  color: var(--green);
+  font-weight: 850;
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
 .final-cta-box {
@@ -1433,7 +1518,7 @@ body {
   .conversion-grid,
   .authority-grid,
   .modal .calculator-layout {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .compact-grid {
@@ -1469,7 +1554,8 @@ body {
   .ad-hero h1 {
     width: min(100%, 340px) !important;
     max-width: 340px !important;
-    font-size: clamp(2.6rem, 12vw, 3.4rem);
+    font-size: 2.75rem;
+    line-height: 0.98;
   }
 
   .ad-hero .hero-copy,
@@ -1539,6 +1625,21 @@ body {
     width: 100%;
     max-width: 100%;
     white-space: normal;
+  }
+
+  .case-panel h2,
+  .authority-grid h2,
+  .final-cta h2 {
+    font-size: 2rem;
+    line-height: 1.08;
+  }
+
+  .conversion-band,
+  .conversion-grid,
+  .case-panel,
+  .case-panel > * {
+    max-width: 100%;
+    min-width: 0;
   }
 
   .modal {
